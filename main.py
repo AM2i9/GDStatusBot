@@ -5,6 +5,8 @@ import math
 import time
 import sys
 import err
+from lists import *
+from main_levels import *
 from discord.ext import commands, tasks
 
 #Loads config from config.yml
@@ -12,7 +14,6 @@ con = config.config
 client = commands.Bot(command_prefix=con["prefix"])
 
 # Global variables
-EMBED = None
 EMBED_MESSAGE = None
 PREVIOUS_LEVEL = None
 PREVIOUS_EMBED_MESSAGE = None
@@ -22,41 +23,6 @@ PREVIOUS_EMBED_MESSAGE = None
 # update.
 DATA = None
 STATIC = {}
-
-#Just some lists
-
-#This one is for the difficulty icons
-faces = ["https://cdn.discordapp.com/attachments/675532248493326359/785672432966828072/Auto.png","https://cdn.discordapp.com/attachments/675532248493326359/785672432139894794/Unrated.png","https://cdn.discordapp.com/attachments/675532248493326359/785672433948164116/Easy.png","https://cdn.discordapp.com/attachments/675532248493326359/785970124657000448/Normal.png","https://cdn.discordapp.com/attachments/675532248493326359/785672437227454474/Hard.png","https://cdn.discordapp.com/attachments/675532248493326359/785672438948167680/Harder.png","https://cdn.discordapp.com/attachments/675532248493326359/785672442789101588/Insane.png","https://cdn.discordapp.com/attachments/675532248493326359/785672436708016148/EasyDemon.png","https://cdn.discordapp.com/attachments/675532248493326359/785672442508476426/MediumDemon.png","https://cdn.discordapp.com/attachments/675532248493326359/785973989495013416/Hard_Demon.png","https://cdn.discordapp.com/attachments/675532248493326359/785672441879199764/InsaneDemon.png","https://cdn.discordapp.com/attachments/675532248493326359/785672438746316840/ExtremeDemon.png"]
-
-#This one tells the program where the image for the difficulty is in the last list
-difficulties = [gd.LevelDifficulty.AUTO,gd.LevelDifficulty.NA,gd.LevelDifficulty.EASY,gd.LevelDifficulty.NORMAL,gd.LevelDifficulty.HARD,gd.LevelDifficulty.HARDER,gd.LevelDifficulty.INSANE,gd.DemonDifficulty.EASY_DEMON,gd.DemonDifficulty.MEDIUM_DEMON,gd.DemonDifficulty.HARD_DEMON,gd.DemonDifficulty.INSANE_DEMON,gd.DemonDifficulty.EXTREME_DEMON]
-
-#And this one just tells the game which of the main levels are of what difficulty, becaues gd.py doesn't do those.
-main_levels = [gd.LevelDifficulty.EASY,gd.LevelDifficulty.EASY,gd.LevelDifficulty.NORMAL,gd.LevelDifficulty.NORMAL,gd.LevelDifficulty.HARD,gd.LevelDifficulty.HARD,gd.LevelDifficulty.HARDER,gd.LevelDifficulty.HARDER,gd.LevelDifficulty.HARDER,gd.LevelDifficulty.INSANE,gd.LevelDifficulty.INSANE,gd.LevelDifficulty.INSANE,gd.LevelDifficulty.INSANE,gd.DemonDifficulty.HARD_DEMON,gd.LevelDifficulty.INSANE,gd.LevelDifficulty.INSANE,gd.LevelDifficulty.HARDER,gd.DemonDifficulty.HARD_DEMON,gd.LevelDifficulty.HARDER,gd.DemonDifficulty.HARD_DEMON,gd.LevelDifficulty.INSANE]
-
-# The loading bar states. The second I made this I actually just stopped and stared at it for a good two minutes. I'm not joking.
-loading_bar = [
-"░░░░░░░░░░░░░░░░░░░░",
-"▓░░░░░░░░░░░░░░░░░░░",
-"▓▓░░░░░░░░░░░░░░░░░░",
-"▓▓▓░░░░░░░░░░░░░░░░░",
-"▓▓▓▓░░░░░░░░░░░░░░░░",
-"▓▓▓▓▓░░░░░░░░░░░░░░░",
-"▓▓▓▓▓▓░░░░░░░░░░░░░░",
-"▓▓▓▓▓▓▓░░░░░░░░░░░░░",
-"▓▓▓▓▓▓▓▓░░░░░░░░░░░░",
-"▓▓▓▓▓▓▓▓▓░░░░░░░░░░░",
-"▓▓▓▓▓▓▓▓▓▓░░░░░░░░░░",
-"▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░░",
-"▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░",
-"▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░░",
-"▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░",
-"▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░",
-"▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░",
-"▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░",
-"▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░",
-"▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░",
-"▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓"]
 
 @client.event
 async def on_ready():
@@ -87,9 +53,9 @@ async def main():
 
     # Bringing in all those globals
     global con, client
-    global EMBED, EMBED_MESSAGE, PREVIOUS_LEVEL, PREVIOUS_EMBED_MESSAGE, DATA, STATIC
+    global EMBED_MESSAGE, PREVIOUS_LEVEL, PREVIOUS_EMBED_MESSAGE, DATA, STATIC
     global faces, difficulties, main_levels
-    global loading_bar
+    global progress_bar
 
     # Fetching the game memory
     memory = getMemory()
@@ -132,7 +98,12 @@ async def main():
 
             #A few little extra texts
             if DATA["percent"] == 100:
-                extra_text=" - LEVEL COMPLETE!"
+                if DATA["practice_mode"]:
+                    extra_text=" - PRACTICE COMPLETE!"
+                else:
+                    extra_text=" - LEVEL COMPLETE!"
+                    color = discord.Color.from_rgb(237, 220, 28)
+
             elif DATA["level_best"] > STATIC["old_best"]:
                 extra_text = " - New Best!"
                 STATIC["old_best"] = DATA["level_best"]
@@ -140,7 +111,7 @@ async def main():
                 extra_text = ""
 
             #Saving the best percent of the session
-            if DATA["percent"] > STATIC["session_best"]:
+            if DATA["percent"] > STATIC["session_best"] and not DATA["practice_mode"]:
                 STATIC["session_best"] = DATA["percent"]
 
             #Getting the star rating of the level, if there is any
@@ -168,8 +139,8 @@ async def main():
             EMBED.set_thumbnail(url=faces[difficulties.index(DATA["difficulty"])])
             
             EMBED.add_field(name="Attempt:",value=DATA["current_attempts"],inline=True)
-            EMBED.add_field(name="Best Percent:",value="{0}%".format(DATA["level_best"]),inline=True)
-            EMBED.add_field(name="Current Progress:",value="{0}%{2}\n{1}".format(DATA["percent"],loading_bar[math.floor(DATA["percent"]/5)],extra_text),inline=False)
+            EMBED.add_field(name="Best %:",value="{0}%".format(DATA["level_best"]),inline=True)
+            EMBED.add_field(name="Current Progress:",value="{0}%{2}\n{1}".format(DATA["percent"],progress_bar[math.floor(DATA["percent"]/5)],extra_text),inline=False)
             EMBED.set_footer(text="Level ID: {0}".format(DATA["level_id"]))
             
 
@@ -203,8 +174,8 @@ async def main():
                 EMBED.add_field(name="Attempts:",value=DATA["current_attempts"],inline=True)
                 EMBED.add_field(name="Total Attempts:",value=DATA["total_attempts"],inline=True)
                 EMBED.add_field(name="Total Jumps:",value=DATA["jumps"],inline=True)
-                EMBED.add_field(name="Best Session Percent:",value="{0}%\n{1}".format(STATIC["session_best"],loading_bar[math.floor(STATIC["session_best"]/5)]),inline=False)
-                EMBED.add_field(name="Best Percent:",value="{0}%\n{1}".format(DATA["level_best"],loading_bar[math.floor(DATA["level_best"]/5)]),inline=False)
+                EMBED.add_field(name="Best Session %:",value="{0}%\n{1}".format(STATIC["session_best"],progress_bar[math.floor(STATIC["session_best"]/5)]),inline=False)
+                EMBED.add_field(name="Best Lifetime %:",value="{0}%\n{1}".format(DATA["level_best"],progress_bar[math.floor(DATA["level_best"]/5)]),inline=False)
                 EMBED.set_footer(text="Level ID: {0}".format(DATA["level_id"]))
 
                 await EMBED_MESSAGE.edit(embed=EMBED)
