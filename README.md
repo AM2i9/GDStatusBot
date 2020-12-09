@@ -45,3 +45,5 @@ When you are done playing a level, and you have returned to the main menu, it wi
 
 ## Bugs
 This program is still in its first stages, and may contain bugs and issues. If you find a bug, or have a suggestion for how to make the bot better, submit an issue under the [issues](https://github.com/AM2i9/gdstatusbot/issues) tab.
+
+Also opayc wanted me to put here that he helped test it, so...
