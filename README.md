@@ -1,4 +1,7 @@
-# GDStatusBot
+<h1 float="left">
+  <img src="https://cdn.discordapp.com/attachments/675532248493326359/786331970937290762/gdsb_Custom_1.png" styles="margin-bottom:0"/> GDStatusBot
+</h1>
+ 
 A discord bot that allows you to show your current progress in a Geometry Dash level through an Embed in discord.
 
 ## Installation
