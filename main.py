@@ -203,6 +203,11 @@ async def sealEmbed():
 
         EMBED.set_thumbnail(url=faces[difficulties.index(DATA["difficulty"])])
 
+        #Getting user
+        user = client.get_user(con['user'])
+
+        EMBED.set_author(name=user.display_name,icon_url=user.avatar_url)
+
         EMBED.add_field(name="Attempts:",value=DATA["current_attempts"],inline=True)
         EMBED.add_field(name="Total Attempts:",value=DATA["total_attempts"],inline=True)
         EMBED.add_field(name="Total Jumps:",value=DATA["jumps"],inline=True)
