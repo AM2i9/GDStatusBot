@@ -272,7 +272,7 @@ async def getUser():
 
     token = ''.join(str(random.randint(1,10)) for i in range(7))
 
-    print("[Info] To link your discord account to the bot, open a new direct message with the bot and send it the following code: {}".format(token))
+    print("[Info] To link your discord account to the bot, open a new direct message with the bot and send it the following code:\n {}".format(token))
 
     while True:
 
@@ -292,7 +292,7 @@ async def getUser():
 
         else:
 
-            print(["[Info] That is not the correct token, please send the correct token printed previously"])
+            print("[Info] That is not the correct token, please send the correct token printed previously")
         
 
 # Starting the bot
