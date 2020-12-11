@@ -24,7 +24,7 @@ user: null
 
 `token` is your discord bot token. This is the only value that you are required to set when downloading the bot.
 
-`null` is your discord user id
+`user` is your discord user id
 
 To create your bot, and get your token, follow [this guide](https://github.com/reactiflux/discord-irc/wiki/Creating-a-discord-bot-&-getting-a-token), then copy the token and place it in `config.yml`
 
