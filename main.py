@@ -5,14 +5,17 @@ import math
 import time
 import sys
 import err
+import random
 from lists import *
 from main_levels import *
 from discord.ext import commands, tasks
 
 #Loads config from config.yml
 con = config.config
-client = commands.Bot(command_prefix=con["prefix"])
 
+intents = discord.Intents.default()
+intents.members = True
+client = commands.Bot(command_prefix=con["prefix"],intents=intents)
 # Global variables
 EMBED_MESSAGE = None
 PREVIOUS_LEVEL = None
@@ -28,6 +31,9 @@ STATIC = {}
 async def on_ready():
     print(f"[Info] Bot logged in as {client.user}")
 
+    if not con["user"]:
+        await getUser()
+
     # Starts the main bot thread
     main.start()
 
@@ -37,12 +43,16 @@ async def set_channel(ctx):
     Sets which channel the bot should send its messages in.
     """
     global con
+    if ctx.message.author.id != con["user"]:
+        return
+
+
     new_channel = ctx.channel.id
 
     con["channel"] = new_channel
     config.update(con)
 
-    await ctx.message.channel.send(f"✅ Set bot channel to {ctx.channel}")
+    await ctx.message.channel.send(f"✅ Set bot channel for {ctx.message.author} to #{ctx.channel}")
 
 @tasks.loop(seconds=2)
 async def main():
@@ -54,17 +64,18 @@ async def main():
     # Bringing in all those globals
     global con, client
     global EMBED_MESSAGE, PREVIOUS_LEVEL, PREVIOUS_EMBED_MESSAGE, DATA, STATIC
-    global faces, difficulties, main_levels
-    global progress_bar
 
     # Fetching the game memory
-    memory = getMemory()
+    memory = await getMemory()
 
     try:
         if memory.is_in_level():
 
+            if memory.get_level_id() != PREVIOUS_LEVEL:
+                await sealEmbed()
+
             # Fetch gamestate data
-            DATA = getData()
+            DATA = await getData()
             
             # Gets wether or not the level being played is the exact same level that was played just previously, so that it will continue to use the same embed
             if PREVIOUS_LEVEL != DATA["level_id"]:
@@ -133,19 +144,25 @@ async def main():
             #Calculating the current attempts on a level
             DATA["current_attempts"] = (DATA["total_attempts"] - STATIC["start_attempts"]) + 1
 
+            #Getting channel
+            channel = client.get_channel(con["channel"])
+
             #Start creating embed
             EMBED = discord.Embed(type="rich",title=title,description="By {0}{1}{2}".format(DATA["level_creator"], STATIC["rating"], STATIC["epic_featured"]),color=color)
 
             EMBED.set_thumbnail(url=faces[difficulties.index(DATA["difficulty"])])
-            
+
+            #Getting user
+            user = client.get_user(con['user'])
+
+            EMBED.set_author(name=user.display_name,icon_url=user.avatar_url)
             EMBED.add_field(name="Attempt:",value=DATA["current_attempts"],inline=True)
             EMBED.add_field(name="Best %:",value="{0}%".format(DATA["level_best"]),inline=True)
             EMBED.add_field(name="Current Progress:",value="{0}%{2}\n{1}".format(DATA["percent"],progress_bar[math.floor(DATA["percent"]/5)],extra_text),inline=False)
             EMBED.set_footer(text="Level ID: {0}".format(DATA["level_id"]))
             
 
-            #Getting channel, and sending embed
-            channel = client.get_channel(con["channel"])
+            #sending embed
 
             if channel is not None:
                 
@@ -161,25 +178,7 @@ async def main():
 
         else:
 
-            # Seals off the embed if a player goes to the menu, or exits the level
-            if EMBED_MESSAGE is not None:
-                
-                title = "Played: {0}".format(DATA["level_name"])
-                color = discord.Color.default()
-
-                EMBED = discord.Embed(type="rich",title=title,description="By {0}{1}{2}".format(DATA["level_creator"], STATIC["rating"], STATIC["epic_featured"]),color=color)
-
-                EMBED.set_thumbnail(url=faces[difficulties.index(DATA["difficulty"])])
-
-                EMBED.add_field(name="Attempts:",value=DATA["current_attempts"],inline=True)
-                EMBED.add_field(name="Total Attempts:",value=DATA["total_attempts"],inline=True)
-                EMBED.add_field(name="Total Jumps:",value=DATA["jumps"],inline=True)
-                EMBED.add_field(name="Best Session %:",value="{0}%\n{1}".format(STATIC["session_best"],progress_bar[math.floor(STATIC["session_best"]/5)]),inline=False)
-                EMBED.add_field(name="Best Lifetime %:",value="{0}%\n{1}".format(DATA["level_best"],progress_bar[math.floor(DATA["level_best"]/5)]),inline=False)
-                EMBED.set_footer(text="Level ID: {0}".format(DATA["level_id"]))
-
-                await EMBED_MESSAGE.edit(embed=EMBED)
-
+                await sealEmbed()
                 #Sets some globals so that the embed can be reused if the same level is played again
                 PREVIOUS_EMBED_MESSAGE = EMBED_MESSAGE
                 EMBED_MESSAGE = None
@@ -187,11 +186,37 @@ async def main():
     except Exception as e:
         err.softError(e)
 
-def getData():
+async def sealEmbed():
+    """
+    Seals off the embed if a player goes to the menu, or exits the level
+    """       
+    global EMBED_MESSAGE
+    global DATA, STATIC
+    global progress_bar
+
+    if EMBED_MESSAGE is not None:
+                
+        title = "Played: {0}".format(DATA["level_name"])
+        color = discord.Color.default()
+
+        EMBED = discord.Embed(type="rich",title=title,description="By {0}{1}{2}".format(DATA["level_creator"], STATIC["rating"], STATIC["epic_featured"]),color=color)
+
+        EMBED.set_thumbnail(url=faces[difficulties.index(DATA["difficulty"])])
+
+        EMBED.add_field(name="Attempts:",value=DATA["current_attempts"],inline=True)
+        EMBED.add_field(name="Total Attempts:",value=DATA["total_attempts"],inline=True)
+        EMBED.add_field(name="Total Jumps:",value=DATA["jumps"],inline=True)
+        EMBED.add_field(name="Best Session %:",value="{0}%\n{1}".format(STATIC["session_best"],progress_bar[math.floor(STATIC["session_best"]/5)]),inline=False)
+        EMBED.add_field(name="Best Lifetime %:",value="{0}%\n{1}".format(DATA["level_best"],progress_bar[math.floor(DATA["level_best"]/5)]),inline=False)
+        EMBED.set_footer(text="Level ID: {0}".format(DATA["level_id"]))
+
+        await EMBED_MESSAGE.edit(embed=EMBED)
+
+async def getData():
     """
     Fetches gamestate data from memory and returns it
     """    
-    memory = getMemory()
+    memory = await getMemory()
 
     level_name = memory.get_level_name()
     level_creator = memory.get_level_creator()
@@ -216,7 +241,7 @@ def getData():
 
     return data
 
-def getMemory():
+async def getMemory():
     """
     Fetches game memory
     """
@@ -224,7 +249,46 @@ def getMemory():
         memory = gd.memory.get_memory()
         return memory
     except:
+        await sealEmbed()
         err.fatalError("GD not detected")
+
+async def getUser():
+    """
+    Allows the user to link their discord account to the bot through their user id
+    """
+    global con
+
+    def checkIfDm(message: discord.Message):
+
+        if isinstance(message.channel, discord.channel.DMChannel) and message.author != client.user:
+            return True
+        else:
+            return False
+
+    token = ''.join(str(random.randint(1,10)) for i in range(7))
+
+    print("[Info] To link your discord account to the bot, open a new direct message with the bot and send it the following code: {}".format(token))
+
+    while True:
+
+        message = await client.wait_for('message',check=checkIfDm)
+
+        if message.content == token:
+            
+            await message.channel.send("Linking account...")
+            print("[Info] Token recieved, linking account")
+
+            con['user'] = message.author.id
+            config.update(con)
+
+            await message.channel.send("Account Linked")
+            print('[Info] Account linked.')
+            break
+
+        else:
+
+            print(["[Info] That is not the correct token, please send the correct token printed previously"])
+        
 
 # Starting the bot
 print("[Info] Waiting for GD...")

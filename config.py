@@ -12,7 +12,7 @@ if not path.exists(config_file):
 
     with open(config_file,"w") as f:
 
-        new_config = {"channel":"None","token":"None","prefix":"gd!"}
+        new_config = {"channel":None,"token":None,"prefix":"gd!","user":None}
         yaml.dump(new_config,f)
 
 #Loading config
@@ -23,6 +23,7 @@ try:
     config["channel"]
     config["token"]
     config["prefix"]
+    config["user"]
 except KeyError:
     err.fatalError("Invalid config.yml")
 
