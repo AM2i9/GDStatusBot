@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "gdstatusbot"
+version = "2.0.0"
+description = "A discord bot that allows you to show your current progress in a Geometry Dash level through an Embed in discord."
+authors = ["Patrick Brennan (AM2i9)"]
+license = "GPL-3.0-or-later"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+"gd.py" = "^0.11.0"
+PyYAML = "^5.4.1"
+"discord.py" = "^1.7.3"
+colorlog = "^5.0.1"
+
+[tool.poetry.dev-dependencies]
+taskipy = "^1.8.1"
+pyinstaller = "^4.3"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.taskipy.tasks]
+start = "python entrypoint.py"
+publish = "pyinstaller gdsb.spec"
